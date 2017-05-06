@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        body,html {
+            height: 90%;
+            overflow: hidden;
+        }
+        .wrap {
+            width: 90%;
+            height: 90%;
+            position: absolute;
+            left: 5%;
+            top: 5%;
+        }
+        .wrap ul li {
+            position: absolute;
+            width: 125px;
+            height: 125px;
+            list-style-type: none;
+            border: 1px solid #333;
+
+        }
+        /* 初始化的li图片的样式 begin*/
+        .photo-wall {
+            transition: transform 1s,left 1s,top 1s;
+            transform: scale(0.92);
+        }
+        /* 初始化的li图片的样式 end*/
+        /* 点击图片之后原地放大的样式 begin*/
+        .scale-large {
+            -moz-transform: scale(1);
+            -webkit-transform: scale(1);
+            transform: scale(1);
+        }
+        /* 点击图片之后原地放大的样式 end*/
+        /*点击图片之后给li添加过渡样式 begin*/
+        .wrap ul li.click {
+            transition: left 1s,top 1s,transform 1s;
+        }
+        /*点击图片之后给li添加过渡样式 end*/
+        /* 按钮的样式 begin */
+        .btn-group {
+            display: none;
+        }
+        .btn-group a {
+            display: block;
+            position: fixed;
+            top: 50%;
+            margin-top: -50px;
+            width: 66px;
+            height: 70px;
+            line-height: 70px;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            text-decoration: none;
+            text-align: center;
+
+        }
+        .left-btn {
+            left: 0;
+        }
+        .right-btn {
+            right: 0;
+        }
+        /* 按钮的样式 end*/
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <ul></ul>
+    <div class="btn-group" id="btnWrap">
+        <a  href="javascript:void(0);" class="left-btn" id="btnLeft">上一个</a>
+        <a href="javascript:void(0);" class="right-btn" id="btnRight">下一个</a>
+    </div>
+</div>
+<script src="js/jquery.min.js">
+</script>
+<script>
+        $(function(){
+            var $ul = $('.wrap ul'),
+                 $wrap = $('.wrap'),
+                //控制li是聚拢还是散开,这里巧妙的运用了onOff来控制多次点击
+                onOff = true,
+                 index = 0,
+                 //控制点击图片的速度
+                 speed = 0,
+                 //控制点击按钮的速度
+                 speedBtn = 0,
+                 $li;
+            init();
+            //初始化方法
+            function init(){
+                createLiElement();
+                $li = $('.wrap ul li');
+                $img = $('.wrap ul li img');
+                initLiPosition();
+                $(window).resize(initLiPosition);
+                liRotate();
+                //初始化点击事件
+                $li.click(function(){
+                    console.log(speed - new Date());
+                    if(speed==0||new Date() - speed > 1200){
+
+                        //如果是聚拢状态
+                        if(onOff){
+                            console.log('聚拢');
+                            $li.addClass('click');
+                            var $target = $(this);
+                            index = $target.index();
+                            //点击之后图片隐藏
+                            $img.addClass('scale-large');
+                            //给每个li设置背景图片为当前li下面的图片，使用background-position控制大小
+                            setTimeout(function(){
+                                $img.fadeOut();
+                                liClickPosition();
+                                liRotate(0);
+                                setBgImg(index);
+                                $("#btnWrap").fadeIn();
+                            },1000);
+                            $(window).off('resize').resize(liClickPosition);
+                            onOff = !onOff;
+                            $("#btnLeft").click(function(){
+                                if(speedBtn==0||new Date() - speedBtn > 1000){
+                                    index --;
+                                    if(index<0){
+                                        index = $li.length -1;
+                                    }
+                                    changeBgImg();
+                                    speedBtn = new Date();
+                                }
+                            });
+                            $("#btnRight").click(function(){
+                                if(speedBtn==0||new Date() - speedBtn > 1000){
+                                    index++;
+                                    if(index > $li.length -1){
+                                        index =0;
+                                    }
+                                    changeBgImg();
+                                }
+                            });
+                        }
+                        //否则是散开状态
+                        else {
+                            console.log('散开');
+                            $("#btnWrap").fadeOut();
+                            $li.css("background",'');
+                            $img.removeClass('scale-large');
+                            $img.fadeIn();
+                            liRotate();
+                            initLiPosition();
+                            $(window).off('resize').resize(initLiPosition);
+                            onOff = !onOff;
+                        }
+                        speed = new Date();
+                    }
+
+                });
+            }
+
+            //初始化li的位置(图片散开状态)
+            function initLiPosition(){
+                //外框宽度
+                var wrapWidth = $wrap.width();
+                var wrapHeight = $wrap.height();
+                //一行的图片总宽度
+                var inlineImgsWidth = 125 * 6;
+                var verticalImgsHeight = 125 * 4;
+                //计算li横向间距
+                var hDistance = (wrapWidth - inlineImgsWidth)/5;
+                var vDistance = (wrapHeight - verticalImgsHeight)/3;
+                $li.each(function(i){
+                    var liX,liY;
+                    //计算每个li的left值
+                    liX = (i % 6)*(125 + hDistance);
+                    //计算每个li的top值
+                    liY = parseInt(i/6)*(125 + vDistance);
+                    $(this).css({
+                        left: liX + 'px',
+                        top: liY + 'px'
+
+                    });
+                });
+            }
+            //创建li
+            function createLiElement(){
+                var li = '';
+                for(var i = 0; i< 24 ; i++){
+                    li+='<li><img class="photo-wall" src="image/02/'+(i + 1)+'.jpg"></li>';
+                }
+                $ul.append($(li));
+            }
+            //点击之后重新计算li的位置(图片聚拢状态)
+            function liClickPosition() {
+                $wrap.addClass('click');
+                //外框宽度
+                var wrapWidth = $wrap.width();
+                var wrapHeight = $wrap.height();
+                var firstLiLeft = (wrapWidth - 750)/2;
+                var firstLiTop =  (wrapHeight - 500)/2;
+                    $li.each(function(i){
+                    var liX,liY;
+                    //计算每个li的left值
+
+                    liX = (i % 6)*125 + firstLiLeft;
+                    //计算每个li的top值
+                    liY = parseInt(i/6)*125 + firstLiTop;
+                    $(this).css({
+                        left: liX + 'px',
+                        top: liY + 'px'
+                    });
+                });
+            }
+            //产生min到max之间的随机数
+            function randomNum(min, max) {
+                if(max < min) return;
+                var num =(Math.random())*(max - min) + min;
+                //console.log(Math.ceil(num));
+                return Math.floor(num);
+            }
+            //旋转li的角度
+            function liRotate(deg) {
+                if(deg||deg==0){
+                    $li.each(function(i,target){
+                        $(target).css({
+                            '-moz-transform': "rotate("+deg + "deg)",
+                            '-webkit-transform':"rotate("+deg + "deg)",
+                            'transform': "rotate("+deg + "deg)"
+                        });
+                    });
+                }
+                else {
+                    $li.each(function(i,target){
+                        deg = randomNum(-30, 30);
+                        $(target).css({
+                            '-moz-transform': "rotate("+deg + "deg)",
+                            '-webkit-transform':"rotate("+deg + "deg)",
+                            'transform': "rotate("+deg + "deg)"
+                        });
+                    });
+                }
+
+            }
+            //给li设置背景图片
+            function setBgImg (index) {
+                $li.each(function(i,target){
+                    $(target).css({
+                        "background": 'url(image/02/big/'+(index + 1)+'.jpg)',
+                        "backgroundPosition": -(i*125)+'px '+(-parseInt(i/6)*125)+'px'
+                    });
+                });
+            }
+            //让li的背景一个一个逐渐消失
+            function changeBgImg(){
+                var ary = [];
+                for(var i = 0 ;i < 24; i++){
+                    ary.push(i);
+                }
+               var tm = setInterval(function(){
+                       var num = randomNum(0,ary.length - 1);
+                       $li.eq(ary[num]).css(
+                           "backgroundImage",'url(image/02/big/'+(index + 1)+'.jpg)'
+                       );
+                       ary.splice(num,1);
+                       console.log(ary,ary.length,num,ary[num]);
+                      if(!ary.length){
+                           clearInterval(tm);
+                           return false;
+                      }
+                },50);
+
+            }
+        });
+</script>
+</body>
+</html>
